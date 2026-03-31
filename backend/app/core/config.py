@@ -1,6 +1,5 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import AnyHttpUrl
-from typing import List
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -26,7 +25,7 @@ class Settings(BaseSettings):
         return str(self.supabase_url).rstrip("/")
 
     @property
-    def cors_origins(self) -> List[str]:
+    def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
 
     model_config = SettingsConfigDict(

@@ -4,6 +4,7 @@ Google Books API tool.
 Enriches results with cover thumbnails, descriptions, and categories.
 Falls back gracefully if the API is unavailable or the key is missing.
 """
+
 from __future__ import annotations
 
 import logging
@@ -11,7 +12,7 @@ from typing import Any
 
 import httpx
 from langchain_core.tools import tool
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
 
@@ -23,10 +24,7 @@ _BASE_URL = "https://www.googleapis.com/books/v1/volumes"
 def _parse_volume(item: dict[str, Any]) -> dict[str, Any]:
     info = item.get("volumeInfo", {})
     image_links = info.get("imageLinks", {})
-    cover_url = (
-        image_links.get("thumbnail")
-        or image_links.get("smallThumbnail")
-    )
+    cover_url = image_links.get("thumbnail") or image_links.get("smallThumbnail")
     # Enforce HTTPS on cover URLs
     if cover_url and cover_url.startswith("http://"):
         cover_url = cover_url.replace("http://", "https://", 1)

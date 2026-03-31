@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
 import uuid
+
+from pydantic import BaseModel, Field
 
 
 class ChatRequest(BaseModel):
@@ -11,11 +11,11 @@ class ChatRequest(BaseModel):
 class Book(BaseModel):
     title: str
     author: str
-    description: Optional[str] = None
-    cover_url: Optional[str] = None
-    genres: List[str] = []
+    description: str | None = None
+    cover_url: str | None = None
+    genres: list[str] = []
     nyt_bestseller: bool = False
-    nyt_list: Optional[str] = None
+    nyt_list: str | None = None
     source: str  # "vector_db" | "google_books" | "open_library"
 
 

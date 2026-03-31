@@ -2,6 +2,7 @@
 Set required environment variables before any app module is imported.
 This allows tests to run without a real .env file.
 """
+
 import os
 
 os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")

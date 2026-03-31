@@ -8,6 +8,7 @@ The /lists/names.json endpoint was removed by NYT on May 15, 2025.
 The overview endpoint is the correct replacement and returns real list names
 dynamically, so this tool never has to maintain a hardcoded name mapping.
 """
+
 from __future__ import annotations
 
 import logging
@@ -15,7 +16,7 @@ from typing import Any
 
 import httpx
 from langchain_core.tools import tool
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
 
@@ -27,15 +28,15 @@ _BASE_URL = "https://api.nytimes.com/svc/books/v3"
 # Each entry is (genre_keyword, [list_name_encoded substrings to prefer]).
 # If nothing matches, we fall back to hardcover-fiction.
 _GENRE_KEYWORDS: list[tuple[str, list[str]]] = [
-    ("young adult",    ["young-adult"]),
-    ("children",       ["childrens", "middle-grade", "picture-book"]),
-    ("nonfiction",     ["nonfiction", "non-fiction"]),
-    ("business",       ["business"]),
-    ("biography",      ["biography", "memoir"]),
-    ("self help",      ["advice", "self-help", "how-to"]),
-    ("graphic",        ["graphic"]),
-    ("audio",          ["audio"]),
-    ("fiction",        ["fiction"]),   # broad fallback inside fiction
+    ("young adult", ["young-adult"]),
+    ("children", ["childrens", "middle-grade", "picture-book"]),
+    ("nonfiction", ["nonfiction", "non-fiction"]),
+    ("business", ["business"]),
+    ("biography", ["biography", "memoir"]),
+    ("self help", ["advice", "self-help", "how-to"]),
+    ("graphic", ["graphic"]),
+    ("audio", ["audio"]),
+    ("fiction", ["fiction"]),  # broad fallback inside fiction
 ]
 
 
@@ -92,7 +93,8 @@ def _match_lists(genre: str, all_lists: list[dict[str, Any]]) -> list[dict[str, 
         preferred_substrings = ["fiction"]
 
     matched = [
-        lst for lst in all_lists
+        lst
+        for lst in all_lists
         if any(sub in lst.get("list_name_encoded", "") for sub in preferred_substrings)
     ]
 
