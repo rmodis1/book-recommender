@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     allowed_origins: str = "http://localhost:3000"
 
     @property
+    def supabase_url_str(self) -> str:
+        """Return Supabase URL without trailing slash."""
+        return str(self.supabase_url).rstrip("/")
+
+    @property
     def cors_origins(self) -> List[str]:
         return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
 
