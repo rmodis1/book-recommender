@@ -1,6 +1,10 @@
+import json
+
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
+
 from app.models.schemas import ChatRequest
+from app.agents.book_agent import stream_response
 
 router = APIRouter()
 
@@ -16,8 +20,17 @@ async def chat(request: ChatRequest) -> StreamingResponse:
     - `done`       — stream complete
     - `error`      — something went wrong
     """
-    # Agent wired in Phase 3; stub returns a single done event for now.
     async def _stream():
-        yield "event: done\ndata: {}\n\n"
+        try:
+            async for event_type, data in stream_response(request.message, request.session_id):
+                if event_type == "text_token":
+                    payload = json.dumps({"token": data})
+                elif event_type == "books":
+                    payload = json.dumps(data)
+                else:  # "error"
+                    payload = json.dumps({"message": data})
+                yield f"event: {event_type}\ndata: {payload}\n\n"
+        finally:
+            yield "event: done\ndata: {}\n\n"
 
     return StreamingResponse(_stream(), media_type="text/event-stream")
