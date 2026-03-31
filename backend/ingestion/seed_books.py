@@ -68,7 +68,7 @@ GENRES = [
     "travel writing",
 ]
 
-BOOKS_PER_GENRE = 200
+BOOKS_PER_GENRE = 300
 _OL_BASE = "https://openlibrary.org"
 _COVERS_URL = "https://covers.openlibrary.org/b/id"
 
@@ -152,6 +152,23 @@ def _build_book(ol_doc: dict[str, Any]) -> dict[str, Any] | None:
 # ---------------------------------------------------------------------------
 
 
+def _upsert_batch(
+    documents: list[Document],
+    embeddings: OpenAIEmbeddings,
+    client: Any,
+) -> None:
+    """Embed and upsert a list of documents into Supabase pgvector."""
+    ids = [doc.metadata["id"] for doc in documents]
+    SupabaseVectorStore.from_documents(
+        documents=documents,
+        embedding=embeddings,
+        client=client,
+        table_name="books",
+        query_name="match_books",
+        ids=ids,
+    )
+
+
 def ingest() -> None:
     logger.info("Connecting to Supabase…")
     client = create_client(settings.supabase_url_str, settings.supabase_service_key)
@@ -161,7 +178,7 @@ def ingest() -> None:
     )
 
     seen_ids: set[str] = set()
-    documents: list[Document] = []
+    total_upserted = 0
 
     for genre in GENRES:
         logger.info("Fetching Open Library — genre: %s", genre)
@@ -171,6 +188,7 @@ def ingest() -> None:
             logger.warning("Skipping genre %s: %s", genre, exc)
             continue
 
+        genre_docs: list[Document] = []
         for ol_doc in ol_docs:
             book = _build_book(ol_doc)
             if not book:
@@ -181,29 +199,22 @@ def ingest() -> None:
                 continue
             seen_ids.add(book_id)
 
-            # Use description as the document content for embedding
             page_content = book["description"] or f"{book['title']} by {book['author']}"
             metadata = {k: v for k, v in book.items() if k != "description"}
-            documents.append(Document(page_content=page_content, metadata=metadata))
+            genre_docs.append(Document(page_content=page_content, metadata=metadata))
 
-        logger.info("Collected %d unique books so far", len(documents))
+        if genre_docs:
+            logger.info("Upserting %d books for genre %r…", len(genre_docs), genre)
+            try:
+                _upsert_batch(genre_docs, embeddings, client)
+                total_upserted += len(genre_docs)
+                logger.info("Upserted — total so far: %d", total_upserted)
+            except Exception as exc:
+                logger.error("Upsert failed for genre %r: %s — skipping", genre, exc)
+
         time.sleep(0.35)  # ≈3 req/sec — stay within OL identified-request limit
 
-    if not documents:
-        logger.error("No books collected — aborting")
-        return
-
-    logger.info("Upserting %d books into Supabase pgvector…", len(documents))
-    ids = [doc.metadata["id"] for doc in documents]
-    SupabaseVectorStore.from_documents(
-        documents=documents,
-        embedding=embeddings,
-        client=client,
-        table_name="books",
-        query_name="match_books",
-        ids=ids,
-    )
-    logger.info("Ingestion complete — %d books embedded and stored", len(documents))
+    logger.info("Ingestion complete — %d books embedded and stored", total_upserted)
 
 
 if __name__ == "__main__":
