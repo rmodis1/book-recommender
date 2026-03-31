@@ -19,6 +19,7 @@ from langchain_core.tools import tool
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
+from ingestion.auto_seed import auto_seed
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +136,7 @@ def search_nyt_bestsellers(genre: str) -> list[dict[str, Any]]:
                     books.append(_parse_book(book, list_name_encoded))
 
         logger.info("NYT overview returned %d books for genre %r", len(books), genre)
+        auto_seed(books)
         return books[:15]
 
     except Exception as exc:

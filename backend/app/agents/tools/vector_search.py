@@ -10,6 +10,7 @@ Falls back to Open Library if Supabase is unreachable.
 from __future__ import annotations
 
 import logging
+import urllib.parse
 from typing import Any, cast
 
 from langchain_core.tools import tool
@@ -50,11 +51,16 @@ def search_books_by_topic(query: str) -> list[dict[str, Any]]:
         results = []
         for row in rows:
             metadata: dict[str, Any] = row.get("metadata") or {}
+            title = metadata.get("title", "")
+            author = metadata.get("author", "")
+            q = urllib.parse.quote_plus(f"{title} {author}".strip())
+            book_url = f"https://www.goodreads.com/search?q={q}"
             results.append(
                 {
                     **metadata,
                     "description": row.get("content", ""),
                     "similarity": row.get("similarity", 0.0),
+                    "book_url": book_url,
                     "source": "vector_db",
                 }
             )
