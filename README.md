@@ -18,10 +18,10 @@ Next.js (Vercel)  ──SSE──►  FastAPI + LangGraph (Railway)
 ## Quick Start
 
 ### Prerequisites
-- Python 3.12+
+- Python 3.13+
 - Node.js 20+
 - A [Supabase](https://supabase.com) project with pgvector enabled
-- API keys for [Google AI Studio](https://aistudio.google.com/app/apikey), [Google Books](https://console.cloud.google.com/apis/library/books.googleapis.com), and [NYT Books](https://developer.nytimes.com/apis)
+- API keys for [OpenAI](https://platform.openai.com/api-keys), [Google Books](https://console.cloud.google.com/apis/library/books.googleapis.com), and [NYT Books](https://developer.nytimes.com/apis)
 
 ### Backend
 
@@ -59,7 +59,7 @@ Open **http://localhost:3000**
 
 | Variable | Description |
 |---|---|
-| `GOOGLE_API_KEY` | Google AI Studio key for Gemini |
+| `OPENAI_API_KEY` | OpenAI API key (chat + embeddings) |
 | `SUPABASE_URL` | Supabase project URL |
 | `SUPABASE_SERVICE_KEY` | Supabase service role key |
 | `GOOGLE_BOOKS_API_KEY` | Google Books API key |
