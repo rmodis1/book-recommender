@@ -1,33 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+
+// Subscribe to class mutations on <html> so the button re-renders when toggled
+function subscribe(callback: () => void): () => void {
+  const observer = new MutationObserver(callback);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+  return () => observer.disconnect();
+}
+
+const getSnapshot = (): boolean =>
+  document.documentElement.classList.contains("dark");
+
+// Server render: assume light mode (matches the flash-prevention script fallback)
+const getServerSnapshot = (): boolean => false;
 
 export function ThemeToggle() {
-  const [mounted, setMounted] = useState(false);
-  const [isDark, setIsDark] = useState(false);
-
-  // Only read the DOM after hydration — server and client both start with false
-  useEffect(() => {
-    setMounted(true);
-    setIsDark(document.documentElement.classList.contains("dark"));
-  }, []);
+  const isDark = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   function toggle() {
     const html = document.documentElement;
-    if (html.classList.contains("dark")) {
+    if (isDark) {
       html.classList.remove("dark");
       localStorage.setItem("theme", "light");
-      setIsDark(false);
     } else {
       html.classList.add("dark");
       localStorage.setItem("theme", "dark");
-      setIsDark(true);
     }
-  }
-
-  // Render a fixed-size placeholder during SSR/hydration — prevents mismatch
-  if (!mounted) {
-    return <div className="w-9 h-9" aria-hidden="true" />;
   }
 
   return (

@@ -68,7 +68,7 @@ GENRES = [
     "travel writing",
 ]
 
-BOOKS_PER_GENRE = 200
+BOOKS_PER_GENRE = 300
 _OL_BASE = "https://openlibrary.org"
 _COVERS_URL = "https://covers.openlibrary.org/b/id"
 
