@@ -49,7 +49,7 @@ export function ChatWindow() {
                 Welcome to Shelf
               </h1>
               <p className="text-base text-zinc-500 dark:text-zinc-400 max-w-sm">
-                Your AI librarian. Tell me what you like and I&apos;ll find your next great read.
+                Your AI librarian. Tell me what you like, and I&apos;ll find your next great read.
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
