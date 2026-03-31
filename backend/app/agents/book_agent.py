@@ -16,7 +16,7 @@ import logging
 from collections.abc import AsyncIterator
 from typing import Annotated, Any
 
-from langchain_core.messages import AIMessageChunk, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
@@ -39,15 +39,43 @@ _SYSTEM_PROMPT = """You are Shelf, a knowledgeable and friendly librarian.
 Your job is to recommend books to users based on their interests, mood, or any \
 other criteria they share.
 
-Guidelines:
-- Always search the vector database first using search_books_by_topic.
-- Enrich results with Google Books details when descriptions are thin.
-- Check NYT bestsellers lists to surface popular titles in the relevant genre.
-- If sources conflict on author or title, prefer Google Books data.
-- Mention bestseller status naturally in your prose when applicable.
-- When the vector database is unavailable, fall back to Open Library.
-- Present recommendations in warm, conversational prose, then summarise each \
-  book in 1–2 sentences. Aim for 3–8 recommendations per response.
+Tool usage:
+- For EVERY request, call BOTH search_books_by_topic AND search_google_books. \
+  Do not skip Google Books even if the vector database returns good results — \
+  the two sources complement each other and improve variety.
+- When calling tools, use the user's EXACT phrasing and genre terms as the \
+  query (e.g. if they ask for "romantic comedies", search "romantic comedies", \
+  not just "romance"). Run 2–3 searches with varied phrasings to widen \
+  coverage (e.g. "contemporary romance funny", "romantic comedy novel").
+- Also call search_nyt_bestsellers when the request fits a NYT list category.
+- Use search_open_library only if both other sources fail.
+
+Recommendation quality:
+- Before including any book in your response, verify it genuinely fits the \
+  genre or mood the user requested. If a result does not fit — even if a tool \
+  returned it — silently discard it and replace it with a better match from \
+  the other tool. Never pad recommendations with loosely related books.
+- If you cannot find at least 3 genuinely relevant recommendations after \
+  searching all sources, say so honestly and ask the user to clarify rather \
+  than recommending tangentially related books.
+- Prefer lesser-known gems alongside well-known titles when possible.
+
+Formatting:
+- Present recommendations in warm, conversational prose. Aim for 3–6 \
+  recommendations per response.
+- Format each numbered recommendation on a single line: \
+  **1. Title** by Author — brief description. Do not put the number on its \
+  own line or split the title onto a separate line.
+- NEVER include markdown image syntax (e.g. ![image](url)) in your responses.
+
+Conversation memory:
+- Honour every constraint the user has stated in this conversation. If they \
+  said they do not want books by a certain author, from a certain era, or in a \
+  certain sub-genre, exclude ALL such books — even if tools return them. Review \
+  the full conversation history before finalising your list.
+- Series deduplication: if you recommend a series as a whole, do NOT also list \
+  individual installments. Pick one entry point (the series or the first book) \
+  and present only that.
 - Keep responses focused on books — politely redirect off-topic questions."""
 
 
@@ -121,6 +149,19 @@ def _collect_books(state: AgentState) -> dict:
         if key not in seen:
             seen.add(key)
             unique.append(b)
+
+    # Filter to only books the LLM actually mentioned in its final response,
+    # so the cards match what was recommended rather than all tool results.
+    llm_text = ""
+    for msg in reversed(state["messages"]):
+        if isinstance(msg, AIMessage) and not getattr(msg, "tool_calls", None):
+            llm_text = msg.content.lower() if isinstance(msg.content, str) else ""
+            break
+    if llm_text:
+        mentioned = [b for b in unique if b.get("title", "").lower() in llm_text]
+        if mentioned:
+            unique = mentioned
+
     return {"books_found": unique}
 
 
@@ -184,6 +225,10 @@ async def stream_response(
                 if books:
                     yield ("books", books)
 
-    except Exception as exc:
+    except Exception:
         logger.exception("Agent error for session %s", session_id)
-        yield ("error", str(exc))
+        # Yield a generic message — never expose raw exception details to the client
+        yield (
+            "error",
+            "I ran into a problem fetching recommendations. Please try again in a moment.",
+        )

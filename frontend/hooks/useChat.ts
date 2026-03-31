@@ -104,7 +104,7 @@ export function useChat() {
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === assistantId
-                  ? { ...m, content: `Sorry, something went wrong: ${message}`, streaming: false }
+                  ? { ...m, content: message, streaming: false }
                   : m
               )
             );
@@ -130,6 +130,11 @@ export function useChat() {
     if (abortRef.current) abortRef.current.abort();
     setMessages([]);
     setIsStreaming(false);
+    // Remove the stored session ID so the next message starts a fresh
+    // LangGraph thread with no memory of prior conversation.
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("shelf_session_id");
+    }
   }, []);
 
   return { messages, isStreaming, sendMessage, clearMessages };

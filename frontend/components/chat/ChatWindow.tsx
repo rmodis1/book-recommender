@@ -8,8 +8,8 @@ import { TypingIndicator } from "@/components/chat/TypingIndicator";
 
 const EXAMPLE_PROMPTS = [
   "I loved Project Hail Mary — what should I read next?",
-  "Recommend some cozy mystery novels for a rainy day",
-  "I want a nonfiction book about human psychology",
+  "Recommend some cozy mystery novels for a rainy day.",
+  "I want a nonfiction book about human psychology.",
   "What are the best fantasy series for a new reader?",
 ];
 
@@ -36,21 +36,28 @@ export function ChatWindow() {
         {isEmpty ? (
           /* Welcome screen */
           <div className="flex flex-col items-center justify-center h-full gap-8 px-4 text-center">
-            <div className="flex flex-col items-center gap-2">
-              <span className="text-5xl">📚</span>
-              <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+            <div className="flex flex-col items-center gap-4">
+              {/* Shelf icon — open book in indigo to match the color scheme */}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" className="w-20 h-20" fill="none" aria-hidden="true">
+                <rect x="4" y="48" width="56" height="8" rx="3" fill="#6366f1"/>
+                <rect x="10" y="14" width="10" height="34" rx="2" fill="#818cf8"/>
+                <rect x="23" y="10" width="10" height="38" rx="2" fill="#6366f1"/>
+                <rect x="36" y="16" width="10" height="32" rx="2" fill="#818cf8"/>
+                <rect x="49" y="12" width="10" height="36" rx="2" fill="#6366f1"/>
+              </svg>
+              <h1 className="text-5xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">
                 Welcome to Shelf
               </h1>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs">
+              <p className="text-base text-zinc-500 dark:text-zinc-400 max-w-sm">
                 Your AI librarian. Tell me what you like and I&apos;ll find your next great read.
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
               {EXAMPLE_PROMPTS.map((prompt) => (
                 <button
                   key={prompt}
                   onClick={() => sendMessage(prompt)}
-                  className="text-left text-xs px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                  className="text-left text-sm px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                 >
                   {prompt}
                 </button>

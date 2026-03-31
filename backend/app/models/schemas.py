@@ -13,6 +13,7 @@ class Book(BaseModel):
     author: str
     description: str | None = None
     cover_url: str | None = None
+    book_url: str | None = None
     genres: list[str] = []
     nyt_bestseller: bool = False
     nyt_list: str | None = None

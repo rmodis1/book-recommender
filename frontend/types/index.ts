@@ -3,6 +3,7 @@ export interface Book {
   author: string;
   description?: string | null;
   cover_url?: string | null;
+  book_url?: string | null;
   source?: string;
   nyt_bestseller?: boolean;
   nyt_list?: string;

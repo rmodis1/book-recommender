@@ -8,6 +8,7 @@ with graceful fallback when description or cover is missing.
 from __future__ import annotations
 
 import logging
+import urllib.parse
 from typing import Any
 
 import httpx
@@ -27,13 +28,17 @@ def _cover_url(cover_id: int | None) -> str | None:
 
 
 def _parse_doc(doc: dict[str, Any]) -> dict[str, Any]:
+    title = doc.get("title", "Unknown Title")
+    author = ", ".join(doc.get("author_name", ["Unknown Author"]))
+    q = urllib.parse.quote_plus(f"{title} {author}".strip())
     return {
-        "title": doc.get("title", "Unknown Title"),
-        "author": ", ".join(doc.get("author_name", ["Unknown Author"])),
+        "title": title,
+        "author": author,
         "description": doc.get("first_sentence", {}).get("value")
         if isinstance(doc.get("first_sentence"), dict)
         else doc.get("first_sentence") or None,
         "cover_url": _cover_url(doc.get("cover_i")),
+        "book_url": f"https://www.goodreads.com/search?q={q}" if q else None,
         "genres": doc.get("subject", [])[:5],
         "source": "open_library",
     }
@@ -60,9 +65,9 @@ def search_open_library(query: str) -> list[dict[str, Any]]:
     Returns up to 10 books with title, author, description, genres, and cover URL.
     Use this to find books by topic, title, or author name.
     """
-    fields = "title,author_name,cover_i,subject,first_sentence"
+    fields = "key,title,author_name,cover_i,subject,first_sentence"
     try:
-        return _search({"q": query, "fields": fields, "limit": 10})
+        return _search({"q": query, "fields": fields, "limit": 10, "language": "eng"})
     except Exception as exc:
         logger.warning("Open Library search failed for query %r: %s", query, exc)
         return []

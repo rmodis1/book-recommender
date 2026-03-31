@@ -8,6 +8,7 @@ Falls back gracefully if the API is unavailable or the key is missing.
 from __future__ import annotations
 
 import logging
+import urllib.parse
 from typing import Any
 
 import httpx
@@ -15,6 +16,7 @@ from langchain_core.tools import tool
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
+from ingestion.auto_seed import auto_seed
 
 logger = logging.getLogger(__name__)
 
@@ -33,11 +35,18 @@ def _parse_volume(item: dict[str, Any]) -> dict[str, Any]:
     if description and len(description) > 500:
         description = description[:500] + "…"
 
+    # Goodreads search URL — consistent and user-friendly
+    title = info.get("title", "")
+    author = ", ".join(info.get("authors", []))
+    q = urllib.parse.quote_plus(f"{title} {author}".strip())
+    book_url = f"https://www.goodreads.com/search?q={q}" if q else None
+
     return {
         "title": info.get("title", "Unknown Title"),
         "author": ", ".join(info.get("authors", ["Unknown Author"])),
         "description": description,
         "cover_url": cover_url,
+        "book_url": book_url,
         "genres": info.get("categories", [])[:5],
         "source": "google_books",
     }
@@ -49,7 +58,12 @@ def _parse_volume(item: dict[str, Any]) -> dict[str, Any]:
     stop=stop_after_attempt(3),
 )
 def _search(query: str) -> list[dict[str, Any]]:
-    params: dict[str, Any] = {"q": query, "maxResults": 10, "printType": "books"}
+    params: dict[str, Any] = {
+        "q": query,
+        "maxResults": 10,
+        "printType": "books",
+        "langRestrict": "en",
+    }
     if settings.google_books_api_key:
         params["key"] = settings.google_books_api_key
     with httpx.Client(timeout=10) as client:
@@ -68,7 +82,9 @@ def search_google_books(query: str) -> list[dict[str, Any]]:
     and genre categories. Prefer this tool for cover images and rich descriptions.
     """
     try:
-        return _search(query)
+        books = _search(query)
+        auto_seed(books)
+        return books
     except Exception as exc:
         logger.warning("Google Books search failed for query %r: %s", query, exc)
         return []
