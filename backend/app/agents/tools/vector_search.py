@@ -10,10 +10,11 @@ Falls back to Open Library if Supabase is unreachable.
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, cast
 
 from langchain_core.tools import tool
 from langchain_openai import OpenAIEmbeddings
+from pydantic import SecretStr
 from supabase import create_client
 
 from app.agents.tools.open_library import search_open_library
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 _embeddings = OpenAIEmbeddings(
     model="text-embedding-3-small",
-    api_key=settings.openai_api_key,
+    api_key=SecretStr(settings.openai_api_key),
 )
 
 
@@ -45,8 +46,9 @@ def search_books_by_topic(query: str) -> list[dict[str, Any]]:
             "match_books",
             {"query_embedding": vector, "match_count": 8, "filter": {}},
         ).execute()
+        rows = cast(list[dict[str, Any]], response.data or [])
         results = []
-        for row in response.data or []:
+        for row in rows:
             metadata: dict[str, Any] = row.get("metadata") or {}
             results.append(
                 {
