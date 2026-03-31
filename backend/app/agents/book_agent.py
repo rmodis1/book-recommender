@@ -8,11 +8,13 @@ Graph shape:
 State carries messages, session_id, and the books list accumulated
 from tool calls so we can emit a `books` SSE event at the end.
 """
+
 from __future__ import annotations
 
 import json
 import logging
-from typing import Annotated, Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Annotated, Any
 
 from langchain_core.messages import AIMessageChunk, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
@@ -22,11 +24,11 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 from typing_extensions import TypedDict
 
-from app.core.config import settings
-from app.agents.tools.vector_search import search_books_by_topic
 from app.agents.tools.google_books import search_google_books
-from app.agents.tools.open_library import search_open_library
 from app.agents.tools.nyt_books import search_nyt_bestsellers
+from app.agents.tools.open_library import search_open_library
+from app.agents.tools.vector_search import search_books_by_topic
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +50,7 @@ Guidelines:
   book in 1–2 sentences. Aim for 3–8 recommendations per response.
 - Keep responses focused on books — politely redirect off-topic questions."""
 
+
 # ---------------------------------------------------------------------------
 # State
 # ---------------------------------------------------------------------------
@@ -66,6 +69,7 @@ _TOOLS = [
     search_open_library,
     search_nyt_bestsellers,
 ]
+
 
 def _make_llm():
     return ChatOpenAI(
@@ -113,7 +117,7 @@ def _collect_books(state: AgentState) -> dict:
     seen: set[str] = set()
     unique: list[dict[str, Any]] = []
     for b in books:
-        key = b.get("id") or f"{b.get('title','')}::{b.get('author','')}"
+        key = b.get("id") or f"{b.get('title', '')}::{b.get('author', '')}"
         if key not in seen:
             seen.add(key)
             unique.append(b)
@@ -131,7 +135,9 @@ def _build_graph():
     builder.add_node("collect_books", _collect_books)
 
     builder.add_edge(START, "agent")
-    builder.add_conditional_edges("agent", _should_continue, {"tools": "tools", END: "collect_books"})
+    builder.add_conditional_edges(
+        "agent", _should_continue, {"tools": "tools", END: "collect_books"}
+    )
     builder.add_edge("tools", "agent")
     builder.add_edge("collect_books", END)
 

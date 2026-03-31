@@ -1,8 +1,9 @@
 import json
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch
 
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
+
 from app.main import app
 
 
@@ -39,13 +40,17 @@ async def test_chat_sse_events():
         chunk = chunk.strip()
         if not chunk:
             continue
-        lines = {line.split(": ", 1)[0]: line.split(": ", 1)[1] for line in chunk.splitlines() if ": " in line}
+        lines = {
+            line.split(": ", 1)[0]: line.split(": ", 1)[1]
+            for line in chunk.splitlines()
+            if ": " in line
+        }
         name = lines.get("event", "")
         raw = lines.get("data", "{}")
         events.setdefault(name, []).append(json.loads(raw))
 
     assert "text_token" in events, "Expected at least one text_token event"
-    assert events["text_token"][0]["token"] == "Here are some great sci-fi picks."
+    assert events["text_token"][0]["token"] == "Here are some great sci-fi picks."  # noqa: S105
 
     assert "books" in events, "Expected a books event"
     books = events["books"][0]

@@ -6,6 +6,7 @@ the langchain_community SupabaseVectorStore which has internal-API
 compatibility issues with supabase>=2.21.
 Falls back to Open Library if Supabase is unreachable.
 """
+
 from __future__ import annotations
 
 import logging
@@ -15,8 +16,8 @@ from langchain_core.tools import tool
 from langchain_openai import OpenAIEmbeddings
 from supabase import create_client
 
-from app.core.config import settings
 from app.agents.tools.open_library import search_open_library
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 

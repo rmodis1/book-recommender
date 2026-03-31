@@ -3,8 +3,8 @@ import json
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-from app.models.schemas import ChatRequest
 from app.agents.book_agent import stream_response
+from app.models.schemas import ChatRequest
 
 router = APIRouter()
 
@@ -20,6 +20,7 @@ async def chat(request: ChatRequest) -> StreamingResponse:
     - `done`       — stream complete
     - `error`      — something went wrong
     """
+
     async def _stream():
         try:
             async for event_type, data in stream_response(request.message, request.session_id):
