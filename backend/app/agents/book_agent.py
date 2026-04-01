@@ -59,8 +59,7 @@ Instructions:
 - Evaluate whether each result genuinely fits the user's genre and mood request.
 - Respond with a brief summary of the best-matching popular books you found."""
 
-_WEB_CURATOR_PROMPT = \
-    """You are The Web Curator — you find what real readers are recommending online.
+_WEB_CURATOR_PROMPT = """You are The Web Curator — you find what real readers are recommending online.
 Your job: search the web for genuine reader recommendations that match the user's request.
 
 Instructions:
@@ -134,7 +133,6 @@ Conversation memory:
 - Never recommend a book the user has already read.
 - Series deduplication: pick one entry point (the series or the first book), not both.
 - Keep responses focused on books — politely redirect off-topic questions."""
-
 
 
 # ---------------------------------------------------------------------------
@@ -249,6 +247,7 @@ Given the conversation so far, produce:
 If is_followup is true, return empty search_angles, excluded_terms, and \
 genre_categories — the previous turn's values will be reused."""
 
+
 def _normalize_query_node(state: AgentState) -> dict:
     # Find the latest human message
     user_text = ""
@@ -258,10 +257,12 @@ def _normalize_query_node(state: AgentState) -> dict:
             break
 
     llm = _make_llm(streaming=False).with_structured_output(_QueryAngles, method="function_calling")
-    result: _QueryAngles = llm.invoke([  # type: ignore[assignment]
-        SystemMessage(content=_NORMALIZE_PROMPT),
-        HumanMessage(content=user_text),
-    ])
+    result: _QueryAngles = llm.invoke(
+        [  # type: ignore[assignment]
+            SystemMessage(content=_NORMALIZE_PROMPT),
+            HumanMessage(content=user_text),
+        ]
+    )
 
     # If it's a follow-up and we already have angles, keep them
     if result.is_followup and state.get("search_angles"):
@@ -305,8 +306,7 @@ def _extract_books_from_final_message(messages: list) -> list[dict[str, Any]]:
                     data = json.loads(match.group())
                     if isinstance(data, list):
                         return [
-                            item for item in data
-                            if isinstance(item, dict) and item.get("title")
+                            item for item in data if isinstance(item, dict) and item.get("title")
                         ]
                 except (json.JSONDecodeError, ValueError):
                     pass
@@ -317,13 +317,19 @@ async def _run_librarian(cats: dict[str, str]) -> list[dict[str, Any]]:
     try:
         vdb_q = cats.get("vector_db", "")
         ol_q = cats.get("open_library", vdb_q)
-        result = await _librarian_agent.ainvoke({"messages": [
-            SystemMessage(content=_LIBRARIAN_PROMPT),
-            HumanMessage(content=(
-                f'Call search_books_by_topic with this query: "{vdb_q}"\n'
-                f'Also call search_open_library with this query: "{ol_q}"'
-            )),
-        ]})
+        result = await _librarian_agent.ainvoke(
+            {
+                "messages": [
+                    SystemMessage(content=_LIBRARIAN_PROMPT),
+                    HumanMessage(
+                        content=(
+                            f'Call search_books_by_topic with this query: "{vdb_q}"\n'
+                            f'Also call search_open_library with this query: "{ol_q}"'
+                        )
+                    ),
+                ]
+            }
+        )
         return _extract_books_from_messages(result["messages"])
     except Exception as exc:
         logger.warning("Librarian agent failed: %s", exc)
@@ -334,13 +340,19 @@ async def _run_trends(cats: dict[str, str]) -> list[dict[str, Any]]:
     try:
         gb_q = cats.get("google_books", "")
         nyt_g = cats.get("nyt", "hardcover-fiction")
-        result = await _trends_agent.ainvoke({"messages": [
-            SystemMessage(content=_TRENDS_PROMPT),
-            HumanMessage(content=(
-                f'Call search_google_books with this query: "{gb_q}"\n'
-                f'Call search_nyt_bestsellers with genre: "{nyt_g}"'
-            )),
-        ]})
+        result = await _trends_agent.ainvoke(
+            {
+                "messages": [
+                    SystemMessage(content=_TRENDS_PROMPT),
+                    HumanMessage(
+                        content=(
+                            f'Call search_google_books with this query: "{gb_q}"\n'
+                            f'Call search_nyt_bestsellers with genre: "{nyt_g}"'
+                        )
+                    ),
+                ]
+            }
+        )
         return _extract_books_from_messages(result["messages"])
     except Exception as exc:
         logger.warning("Trend Watcher agent failed: %s", exc)
@@ -352,10 +364,14 @@ async def _run_web_curator(cats: dict[str, str]) -> list[dict[str, Any]]:
         return []
     try:
         web_q = cats.get("web", "")
-        result = await _web_curator_agent.ainvoke({"messages": [
-            SystemMessage(content=_WEB_CURATOR_PROMPT),
-            HumanMessage(content=f"Search for book recommendations: {web_q}"),
-        ]})
+        result = await _web_curator_agent.ainvoke(
+            {
+                "messages": [
+                    SystemMessage(content=_WEB_CURATOR_PROMPT),
+                    HumanMessage(content=f"Search for book recommendations: {web_q}"),
+                ]
+            }
+        )
         books = _extract_books_from_messages(result["messages"])
         if not books:
             books = _extract_books_from_final_message(result["messages"])
@@ -473,9 +489,7 @@ def _filter_books_node(state: AgentState) -> dict:
         return {"books_found": []}
 
     # Extract (title, author) pairs from **N. Title** by Author lines
-    pairs: list[tuple[str, str]] = re.findall(
-        r"\*\*\d+\.\s+(.+?)\*\*\s+by\s+([^—\n\[]+)", llm_text
-    )
+    pairs: list[tuple[str, str]] = re.findall(r"\*\*\d+\.\s+(.+?)\*\*\s+by\s+([^—\n\[]+)", llm_text)
     if not pairs:
         # Plain-text fallback: "1. Title by Author"
         plain = re.findall(r"^\d+\.\s+(.+?)\s+by\s+([^—\n\[]+)", llm_text, re.MULTILINE)
@@ -485,9 +499,7 @@ def _filter_books_node(state: AgentState) -> dict:
         return {"books_found": books or []}
 
     # Index catalog books by normalised title
-    books_by_title: dict[str, dict[str, Any]] = {
-        _main_title(b.get("title", "")): b for b in books
-    }
+    books_by_title: dict[str, dict[str, Any]] = {_main_title(b.get("title", "")): b for b in books}
 
     result: list[dict[str, Any]] = []
     missing: list[tuple[str, str]] = []
@@ -504,16 +516,13 @@ def _filter_books_node(state: AgentState) -> dict:
     # Fallback: look up missing titles via Google Books so cards always appear
     for title, author in missing:
         try:
-            hits: list[dict[str, Any]] = search_google_books.invoke(
-                {"query": f"{title} {author}"}
-            )
+            hits: list[dict[str, Any]] = search_google_books.invoke({"query": f"{title} {author}"})
             if hits:
                 result.append(hits[0])
         except Exception as exc:
             logger.debug("Fallback lookup failed for %r: %s", title, exc)
 
     return {"books_found": result}
-
 
 
 # ---------------------------------------------------------------------------

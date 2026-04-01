@@ -69,13 +69,15 @@ def search_open_library(query: str) -> list[dict[str, Any]]:
     try:
         # Use subject: prefix for more targeted, faster results
         subject_query = f"subject:{query}"
-        return _search({
-            "q": subject_query,
-            "fields": fields,
-            "limit": 10,
-            "language": "eng",
-            "sort": "rating",
-        })
+        return _search(
+            {
+                "q": subject_query,
+                "fields": fields,
+                "limit": 10,
+                "language": "eng",
+                "sort": "rating",
+            }
+        )
     except Exception as exc:
         logger.warning("Open Library search failed for query %r: %s", query, exc)
         return []
