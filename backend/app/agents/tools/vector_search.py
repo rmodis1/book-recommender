@@ -43,19 +43,23 @@ def search_books_by_topic(query: str) -> list[dict[str, Any]]:
     try:
         vector = _embeddings.embed_query(query)
         client = create_client(settings.supabase_url_str, settings.supabase_service_key)
+        # Fetch more candidates than needed so we can diversify by author
         response = client.rpc(
             "match_books",
-            {"query_embedding": vector, "match_count": 8, "filter": {}},
+            {"query_embedding": vector, "match_count": 20, "filter": {}},
         ).execute()
         rows = cast(list[dict[str, Any]], response.data or [])
-        results = []
+
+        # Build full result objects, then deduplicate by author (≤2 per author)
+        # so that popular authors don't crowd out every slot in every query.
+        candidates = []
         for row in rows:
             metadata: dict[str, Any] = row.get("metadata") or {}
             title = metadata.get("title", "")
             author = metadata.get("author", "")
             q = urllib.parse.quote_plus(f"{title} {author}".strip())
             book_url = f"https://www.goodreads.com/search?q={q}"
-            results.append(
+            candidates.append(
                 {
                     **metadata,
                     "description": row.get("content", ""),
@@ -64,7 +68,19 @@ def search_books_by_topic(query: str) -> list[dict[str, Any]]:
                     "source": "vector_db",
                 }
             )
-        return results
+
+        # Author-diversity pass: keep at most 2 books per author, return top 8
+        author_counts: dict[str, int] = {}
+        diverse: list[dict[str, Any]] = []
+        for book in candidates:
+            author = (book.get("author") or "unknown").lower()
+            if author_counts.get(author, 0) < 2:
+                author_counts[author] = author_counts.get(author, 0) + 1
+                diverse.append(book)
+            if len(diverse) == 8:
+                break
+
+        return diverse
     except Exception as exc:
         logger.warning("Vector search failed, falling back to Open Library: %s", exc)
         return search_open_library.invoke(query)  # type: ignore[arg-type]

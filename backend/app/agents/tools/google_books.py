@@ -13,7 +13,7 @@ from typing import Any
 
 import httpx
 from langchain_core.tools import tool
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
 from ingestion.auto_seed import auto_seed
@@ -21,6 +21,14 @@ from ingestion.auto_seed import auto_seed
 logger = logging.getLogger(__name__)
 
 _BASE_URL = "https://www.googleapis.com/books/v1/volumes"
+
+
+def _is_retryable(exc: BaseException) -> bool:
+    """Retry on network-level errors and 5xx responses; never on 4xx."""
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code >= 500
+    # Connection errors, timeouts, etc. — worth retrying
+    return isinstance(exc, httpx.HTTPError)
 
 
 def _parse_volume(item: dict[str, Any]) -> dict[str, Any]:
@@ -53,7 +61,7 @@ def _parse_volume(item: dict[str, Any]) -> dict[str, Any]:
 
 
 @retry(
-    retry=retry_if_exception_type(httpx.HTTPError),
+    retry=retry_if_exception(_is_retryable),
     wait=wait_exponential(multiplier=1, min=1, max=8),
     stop=stop_after_attempt(3),
 )
@@ -86,5 +94,7 @@ def search_google_books(query: str) -> list[dict[str, Any]]:
         auto_seed(books)
         return books
     except Exception as exc:
-        logger.warning("Google Books search failed for query %r: %s", query, exc)
+        # 429s are expected on the free tier — log at info, not warning
+        level = logging.INFO if "429" in str(exc) else logging.WARNING
+        logger.log(level, "Google Books search failed for query %r: %s", query, exc)
         return []

@@ -47,10 +47,10 @@ def _parse_doc(doc: dict[str, Any]) -> dict[str, Any]:
 @retry(
     retry=retry_if_exception_type(httpx.HTTPError),
     wait=wait_exponential(multiplier=1, min=1, max=8),
-    stop=stop_after_attempt(3),
+    stop=stop_after_attempt(1),
 )
 def _search(params: dict[str, Any]) -> list[dict[str, Any]]:
-    with httpx.Client(timeout=10) as client:
+    with httpx.Client(timeout=6) as client:
         response = client.get(f"{_BASE_URL}/search.json", params=params)
         response.raise_for_status()
         docs = response.json().get("docs", [])
@@ -67,7 +67,17 @@ def search_open_library(query: str) -> list[dict[str, Any]]:
     """
     fields = "key,title,author_name,cover_i,subject,first_sentence"
     try:
-        return _search({"q": query, "fields": fields, "limit": 10, "language": "eng"})
+        # Use subject: prefix for more targeted, faster results
+        subject_query = f"subject:{query}"
+        return _search(
+            {
+                "q": subject_query,
+                "fields": fields,
+                "limit": 10,
+                "language": "eng",
+                "sort": "rating",
+            }
+        )
     except Exception as exc:
         logger.warning("Open Library search failed for query %r: %s", query, exc)
         return []
