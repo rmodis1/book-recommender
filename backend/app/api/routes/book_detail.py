@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
+from pydantic import BaseModel
 
 from app.core.config import settings
 
@@ -22,7 +22,8 @@ _llm = ChatOpenAI(
 )
 
 _DETAIL_PROMPT = """You are a knowledgeable and enthusiastic book expert. \
-Given the book reference "{subject}", write a concise, engaging overview (2–3 short paragraphs) covering:
+Given the book reference "{subject}", write a concise, engaging overview \
+(2–3 short paragraphs) covering:
 - What the book is about (plot or subject, without major spoilers)
 - What makes it special or noteworthy
 - Who would enjoy it most

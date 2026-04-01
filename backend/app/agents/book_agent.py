@@ -59,7 +59,8 @@ Instructions:
 - Evaluate whether each result genuinely fits the user's genre and mood request.
 - Respond with a brief summary of the best-matching popular books you found."""
 
-_WEB_CURATOR_PROMPT = """You are The Web Curator — you find what real readers are recommending online.
+_WEB_CURATOR_PROMPT = \
+    """You are The Web Curator — you find what real readers are recommending online.
 Your job: search the web for genuine reader recommendations that match the user's request.
 
 Instructions:
@@ -67,7 +68,8 @@ Instructions:
 - Look for specific book titles and authors mentioned in reviews and discussions.
 - Evaluate whether recommended books genuinely match the user's genre and mood.
 - Output ONLY a valid JSON array of the books you found, exactly like this:
-  [{"title": "Book Title", "author": "Author Name", "description": "why readers love it", "source": "web"}]
+  [{"title": "Book Title", "author": "Author Name", \
+  "description": "why readers love it", "source": "web"}]
   If no clear matches, output: []
 - Do NOT include any prose outside the JSON array."""
 
