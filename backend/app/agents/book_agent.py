@@ -113,6 +113,10 @@ Formatting:
     WRONG:   1.\n  **The Martian** by Andy Weir — ...
     WRONG:   **1.**\n  **The Martian** by Andy Weir — ...
   The number and title must be inside the same pair of ** markers: **1. Title**
+- TITLE CASING: Write book titles in standard Title Case (e.g. "The Great Gatsby", \
+  "A Court of Thorns and Roses"). NEVER write titles in ALL CAPS \
+  (e.g. "THE GREAT GATSBY" is wrong). If a source provides an all-caps title, \
+  convert it to Title Case.
 - NEVER include markdown image syntax (e.g. ![image](url)) in your responses.
 - After the description of each recommendation, add a "Tell me more" link \
   using angle-bracket URL syntax to handle spaces: \
