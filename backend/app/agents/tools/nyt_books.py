@@ -12,6 +12,7 @@ dynamically, so this tool never has to maintain a hardcoded name mapping.
 from __future__ import annotations
 
 import logging
+import urllib.parse
 from typing import Any
 
 import httpx
@@ -29,24 +30,58 @@ _BASE_URL = "https://api.nytimes.com/svc/books/v3"
 # Each entry is (genre_keyword, [list_name_encoded substrings to prefer]).
 # If nothing matches, we fall back to hardcover-fiction.
 _GENRE_KEYWORDS: list[tuple[str, list[str]]] = [
+    # Age categories — checked first so they don't fall through to fiction
     ("young adult", ["young-adult"]),
+    ("ya ", ["young-adult"]),
     ("children", ["childrens", "middle-grade", "picture-book"]),
+    ("middle grade", ["middle-grade"]),
+    # Nonfiction categories
     ("nonfiction", ["nonfiction", "non-fiction"]),
-    ("business", ["business"]),
+    ("non-fiction", ["nonfiction", "non-fiction"]),
     ("biography", ["biography", "memoir"]),
+    ("memoir", ["biography", "memoir"]),
     ("self help", ["advice", "self-help", "how-to"]),
+    ("self-help", ["advice", "self-help", "how-to"]),
+    ("how to", ["advice", "how-to"]),
+    ("business", ["business"]),
+    ("health", ["health"]),
+    ("wellness", ["health"]),
+    ("science", ["science"]),
+    ("history", ["nonfiction", "non-fiction"]),
+    ("true crime", ["nonfiction", "non-fiction"]),
+    # Visual / audio formats
     ("graphic", ["graphic"]),
+    ("manga", ["graphic"]),
+    ("comic", ["graphic"]),
     ("audio", ["audio"]),
-    ("fiction", ["fiction"]),  # broad fallback inside fiction
+    # Fiction subgenres — NYT has no dedicated subgenre lists;
+    # all map to fiction so the tool fires intentionally rather than via silent fallback
+    ("mystery", ["fiction"]),
+    ("thriller", ["fiction"]),
+    ("horror", ["fiction"]),
+    ("romance", ["fiction"]),
+    ("fantasy", ["fiction"]),
+    ("science fiction", ["fiction"]),
+    ("sci-fi", ["fiction"]),
+    ("cozy", ["fiction"]),
+    ("detective", ["fiction"]),
+    ("crime", ["fiction"]),
+    ("historical fiction", ["fiction"]),
+    ("literary fiction", ["fiction"]),
+    ("fiction", ["fiction"]),  # broad fallback
 ]
 
 
 def _parse_book(book: dict[str, Any], list_name_encoded: str) -> dict[str, Any]:
+    title = book.get("title", "")
+    author = book.get("author", "")
+    q = urllib.parse.quote_plus(f"{title} {author}".strip())
     return {
-        "title": book.get("title", ""),
-        "author": book.get("author", ""),
+        "title": title,
+        "author": author,
         "description": book.get("description") or None,
         "cover_url": book.get("book_image") or None,
+        "book_url": f"https://www.goodreads.com/search?q={q}" if q else None,
         "nyt_bestseller": True,
         "nyt_list": list_name_encoded,
         "nyt_rank": book.get("rank"),

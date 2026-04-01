@@ -1,33 +1,106 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, startTransition, useState } from "react";
 import { useChat } from "@/hooks/useChat";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
 
-const EXAMPLE_PROMPTS = [
+const ALL_PROMPTS = [
+  // Science fiction
   "I loved Project Hail Mary — what should I read next?",
-  "Recommend some cozy mystery novels for a rainy day.",
-  "I want a nonfiction book about human psychology.",
+  "I finished The Martian and want more books like it.",
+  "Recommend some hard sci-fi with realistic science.",
+  "What are the best space opera series to start with?",
+  "I loved Dune — what epic sci-fi should I read after?",
+  "I want sci-fi that explores artificial intelligence and consciousness.",
+  // Fantasy
   "What are the best fantasy series for a new reader?",
+  "I loved The Hobbit — what classic fantasy should I try next?",
+  "Recommend some epic fantasy with incredible world-building.",
+  "I want dark fantasy with morally complex characters.",
+  "What are some great urban fantasy novels set in modern cities?",
+  "I finished A Court of Thorns and Roses — what should I read next?",
+  "Any fantasy books with strong female protagonists?",
+  // Horror
+  "I want a genuinely scary horror novel for a dark night in.",
+  "Recommend some psychological horror that messes with your mind.",
+  "What are the best Stephen King books to start with?",
+  "I want subtle, atmospheric horror rather than gore.",
+  // Mystery & thriller
+  "Recommend some cozy mystery novels for a rainy day.",
+  "I loved Gone Girl — what psychological thrillers should I read next?",
+  "What are the best classic detective novels I should read?",
+  "I want a twisty thriller that keeps me up all night.",
+  "Recommend a murder mystery set in a historical period.",
+  "What are some great true crime books from the last few years?",
+  // Romance
+  "What are the best contemporary romance novels with great banter?",
+  "I want a funny, lighthearted romantic comedy to cheer me up.",
+  "Recommend some historical romance set in the Regency era.",
+  "I loved Outlander — what other historical romance should I try?",
+  "What are some great paranormal romance series?",
+  // Literary fiction
+  "I want a beautiful, literary novel I'll think about for weeks.",
+  "Recommend some short story collections that are impossible to put down.",
+  "What are the best Booker Prize winners worth reading?",
+  "I want literary fiction that deals with identity and belonging.",
+  // Historical fiction
+  "Recommend some immersive historical fiction set in World War II.",
+  "I want a historical novel set in ancient Rome or Greece.",
+  "What are the best historical fiction books about strong women?",
+  // Young adult
+  "I loved The Hunger Games — what YA should I read next?",
+  "What are the best YA fantasy series for a teenager?",
+  "Recommend some YA novels that adults love just as much.",
+  // Nonfiction
+  "I want a nonfiction book about human psychology.",
+  "Recommend some popular science books that are actually exciting to read.",
+  "I loved Sapiens — what other big-ideas history books should I try?",
+  "I want a memoir that reads like a novel — gripping and personal.",
+  "What are the best self-help books that are actually backed by science?",
+  "Recommend a biography of someone who changed the world.",
+  "I finished Atomic Habits — what other productivity books should I read?",
+  "I want a travel memoir that makes me want to book a flight.",
+  "What are some great books about the history of science?",
+  "Recommend nonfiction about the history of the internet or technology.",
 ];
+
+function shuffled<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 export function ChatWindow() {
   const { messages, isStreaming, sendMessage, clearMessages } = useChat();
   const bottomRef = useRef<HTMLDivElement>(null);
   const isEmpty = messages.length === 0;
+  const [examplePrompts, setExamplePrompts] = useState<string[]>([]);
+
+  // Shuffle prompts client-side only to avoid SSR/client hydration mismatch.
+  // startTransition defers the update so the React Compiler doesn't flag it
+  // as a synchronous setState-in-effect (cascading render) violation.
+  useEffect(() => {
+    startTransition(() => {
+      setExamplePrompts(shuffled(ALL_PROMPTS).slice(0, 4));
+    });
+  }, []);
 
   // Scroll to bottom whenever messages or streaming state changes
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isStreaming]);
 
-  // Show the typing indicator only before the assistant message has started
+  // Show the typing indicator while streaming and the assistant message is still empty
   const showTypingDots =
     isStreaming &&
     messages.length > 0 &&
-    messages[messages.length - 1].role === "user";
+    messages[messages.length - 1].role === "assistant" &&
+    messages[messages.length - 1].content === "";
 
   return (
     <div className="flex flex-col h-full">
@@ -53,7 +126,7 @@ export function ChatWindow() {
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
-              {EXAMPLE_PROMPTS.map((prompt) => (
+              {examplePrompts.map((prompt) => (
                 <button
                   key={prompt}
                   onClick={() => sendMessage(prompt)}
@@ -67,7 +140,10 @@ export function ChatWindow() {
         ) : (
           <div className="flex flex-col gap-4 px-4 py-6">
             {messages.map((msg) => (
-              <MessageBubble key={msg.id} message={msg} />
+              <MessageBubble
+                key={msg.id}
+                message={msg}
+              />
             ))}
             <TypingIndicator visible={showTypingDots} />
             <div ref={bottomRef} />
@@ -80,7 +156,10 @@ export function ChatWindow() {
         {!isEmpty && (
           <div className="flex justify-end mb-2">
             <button
-              onClick={clearMessages}
+              onClick={() => {
+                clearMessages();
+                setExamplePrompts(shuffled(ALL_PROMPTS).slice(0, 4));
+              }}
               className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
             >
               Clear conversation

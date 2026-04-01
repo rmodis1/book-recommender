@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     # NYT Books
     nyt_api_key: str = ""
 
+    # Tavily web search
+    tavily_api_key: str = ""
+
     # CORS — stored as comma-separated string to avoid pydantic-settings JSON parsing
     allowed_origins: str = "http://localhost:3000"
 
