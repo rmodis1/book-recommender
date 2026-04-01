@@ -429,7 +429,8 @@ def _synthesizer_node(state: AgentState) -> dict:
     candidate_lines: list[str] = []
     for b in ordered_books[:25]:
         genres = ", ".join((b.get("genres") or [])[:3])
-        desc = (b.get("description") or "")[:150].rstrip()
+        raw_desc = b.get("description") or ""
+        desc = (raw_desc if isinstance(raw_desc, str) else " ".join(raw_desc))[:150].rstrip()
         source = b.get("source", "catalog")
         similarity = b.get("similarity")
         score_str = f" score={similarity:.2f}" if isinstance(similarity, float) else ""
