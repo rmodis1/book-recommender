@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from langchain_openai import ChatOpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 
 from app.core.config import settings
 
@@ -18,7 +18,7 @@ class DetailResponse(BaseModel):
 _llm = ChatOpenAI(
     model="gpt-4o-mini",
     temperature=0.7,
-    openai_api_key=settings.openai_api_key,
+    api_key=SecretStr(settings.openai_api_key),
 )
 
 _DETAIL_PROMPT = """You are a knowledgeable and enthusiastic book expert. \

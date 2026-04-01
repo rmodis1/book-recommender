@@ -25,7 +25,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import create_react_agent
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 from typing_extensions import TypedDict
 
 from app.agents.tools.google_books import search_google_books
@@ -169,7 +169,7 @@ class AgentState(TypedDict):
 def _make_llm(streaming: bool = True) -> ChatOpenAI:
     return ChatOpenAI(
         model="gpt-4o-mini",
-        api_key=settings.openai_api_key,
+        api_key=SecretStr(settings.openai_api_key),
         streaming=streaming,
         temperature=0.7,
     )
@@ -569,6 +569,9 @@ async def stream_response(
         "messages": [HumanMessage(content=message)],
         "session_id": session_id,
         "books_found": [],
+        "search_angles": [],
+        "excluded_terms": [],
+        "genre_categories": {},
     }
 
     try:
