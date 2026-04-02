@@ -4,6 +4,8 @@ A ChatGPT-style book recommendation chatbot. Describe your reading tastes and Sh
 
 **[Try it live →](https://book-recommender-ten.vercel.app)**
 
+<img width="1373" height="745" alt="Screenshot 2026-04-02 at 7 20 34 PM" src="https://github.com/user-attachments/assets/d05fc24a-d66a-42f7-bf25-090257f27e4c" />
+
 ## How It Works
 
 Each chat message is processed by a 5-stage LangGraph pipeline:
