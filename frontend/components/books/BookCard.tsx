@@ -11,7 +11,8 @@ interface BookCardProps {
 export function BookCard({ book }: BookCardProps) {
   const bookQ = encodeURIComponent(`${book.title} ${book.author ?? ""}`.trim());
   const powellsUrl = `https://www.powells.com/searchresults?keyword=${bookQ}`;
-  const goodreadsUrl = book.book_url ?? `https://www.goodreads.com/search?q=${bookQ}`;
+  const titleQ = encodeURIComponent(book.title);
+  const goodreadsUrl = `https://www.goodreads.com/search?q=${titleQ}`;
   const olCoverUrl = `https://covers.openlibrary.org/b/title/${encodeURIComponent(book.title)}-M.jpg`;
   const [coverSrc, setCoverSrc] = useState(book.cover_url || olCoverUrl);
 
