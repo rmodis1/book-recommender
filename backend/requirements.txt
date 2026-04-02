@@ -4,6 +4,8 @@ uvicorn[standard]==0.34.0
 pydantic==2.12.5
 pydantic-settings==2.7.1
 python-dotenv==1.0.1
+slowapi==0.1.9
+limits==3.14.0
 
 # LangChain / LangGraph / OpenAI
 langchain==0.3.18

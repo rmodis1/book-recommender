@@ -1,16 +1,18 @@
 import json
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
 from app.agents.book_agent import stream_response
+from app.core.limiter import limiter
 from app.models.schemas import ChatRequest
 
 router = APIRouter()
 
 
 @router.post("/chat", tags=["chat"])
-async def chat(request: ChatRequest) -> StreamingResponse:
+@limiter.limit("10/minute")
+async def chat(request: Request, body: ChatRequest) -> StreamingResponse:
     """
     Stream book recommendations as Server-Sent Events.
 
@@ -23,7 +25,7 @@ async def chat(request: ChatRequest) -> StreamingResponse:
 
     async def _stream():
         try:
-            async for event_type, data in stream_response(request.message, request.session_id):
+            async for event_type, data in stream_response(body.message, body.session_id):
                 if event_type == "text_token":
                     payload = json.dumps({"token": data})
                 elif event_type == "books":

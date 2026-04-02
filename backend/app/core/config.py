@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     # Tavily web search
     tavily_api_key: str = ""
 
+    # Deployment environment — set to "production" in Railway
+    environment: str = "development"
+
     # CORS — stored as comma-separated string to avoid pydantic-settings JSON parsing
     allowed_origins: str = "http://localhost:3000"
 
